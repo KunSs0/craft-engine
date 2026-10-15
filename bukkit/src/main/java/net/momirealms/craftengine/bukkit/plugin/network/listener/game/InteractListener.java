@@ -1,6 +1,7 @@
 package net.momirealms.craftengine.bukkit.plugin.network.listener.game;
 
 import net.momirealms.craftengine.bukkit.api.event.FurnitureInteractEvent;
+import net.momirealms.craftengine.bukkit.api.furniture.FurnitureInteractionContext;
 import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurniture;
 import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurnitureManager;
 import net.momirealms.craftengine.bukkit.plugin.BukkitCraftEngine;
@@ -111,7 +112,7 @@ public final class InteractListener {
                     buf.writeBoolean(usingSecondaryAction);
                 }
 
-                performInteractFurniture(furniture, entityId, serverPlayer, hand, usingSecondaryAction);
+                performInteractFurniture(furniture, entityId, serverPlayer, hand, usingSecondaryAction, new Vec3d(x, y, z));
             } else if (actionType == 0) {
                 // INTERACT
                 int hand = buf.readVarInt();
@@ -161,7 +162,7 @@ public final class InteractListener {
                 buf.writeBoolean(usingSecondaryAction);
             }
 
-            performInteractFurniture(furniture, entityId, serverPlayer, hand, usingSecondaryAction);
+            performInteractFurniture(furniture, entityId, serverPlayer, hand, usingSecondaryAction, vec3d);
         }
     }
 
@@ -169,7 +170,8 @@ public final class InteractListener {
                                                 int entityId,
                                                 BukkitServerPlayer serverPlayer,
                                                 InteractionHand hand,
-                                                boolean usingSecondaryAction) {
+                                                boolean usingSecondaryAction,
+                                                Vec3d relativeHitPosition) {
         Location location = furniture.location();
 
         Runnable mainThreadTask = () -> {
@@ -187,12 +189,13 @@ public final class InteractListener {
 
             Player platformPlayer = serverPlayer.platformPlayer();
             if (platformPlayer == null) return;
-            // 检测能否交互碰撞箱
+            // 第三方解析器先裁决；所有实现明确跳过时仍使用原有玩家眼睛射线。
             Location eyeLocation = serverPlayer.getEyeLocation();
             Vector direction = eyeLocation.getDirection();
-            Location endLocation = eyeLocation.clone();
-            endLocation.add(direction.multiply(serverPlayer.getCachedInteractionRange()));
-            Optional<EntityHitResult> optionalHitResult = part.aabb().clip(LocationUtils.toVec3d(eyeLocation), LocationUtils.toVec3d(endLocation));
+            FurnitureInteractionContext context = new FurnitureInteractionContext(platformPlayer, furniture, hitBox, part,
+                    hand, usingSecondaryAction, relativeHitPosition, LocationUtils.toVec3d(eyeLocation),
+                    new Vec3d(direction.getX(), direction.getY(), direction.getZ()), serverPlayer.getCachedInteractionRange());
+            Optional<EntityHitResult> optionalHitResult = BukkitCraftEngine.instance().furnitureInteractionManager().resolve(context);
             if (optionalHitResult.isEmpty()) {
                 return;
             }

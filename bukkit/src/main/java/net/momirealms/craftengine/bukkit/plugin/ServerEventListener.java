@@ -2,6 +2,7 @@ package net.momirealms.craftengine.bukkit.plugin;
 
 import net.momirealms.craftengine.bukkit.api.event.ServerPreShutdownEvent;
 import net.momirealms.craftengine.bukkit.util.ServerUtils;
+import net.momirealms.craftengine.core.util.VersionHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,7 +19,8 @@ public class ServerEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTickEnd(PluginDisableEvent event) {
-        if (!ServerUtils.isRunning() && !this.shutdown) {
+        this.plugin.furnitureInteractionManager().unregister(event.getPlugin());
+        if (VersionHelper.hasPaperPatch && !ServerUtils.isRunning() && !this.shutdown) {
             this.shutdown = true;
             Bukkit.getPluginManager().callEvent(new ServerPreShutdownEvent());
         }

@@ -12,6 +12,7 @@ import net.momirealms.craftengine.bukkit.block.behavior.BukkitBlockBehaviors;
 import net.momirealms.craftengine.bukkit.block.entity.renderer.constant.BukkitBlockEntityElementConfigs;
 import net.momirealms.craftengine.bukkit.entity.BukkitEntityManager;
 import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurnitureManager;
+import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurnitureInteractionManager;
 import net.momirealms.craftengine.bukkit.entity.furniture.behavior.BukkitFurnitureBehaviors;
 import net.momirealms.craftengine.bukkit.entity.furniture.element.BukkitFurnitureElementConfigs;
 import net.momirealms.craftengine.bukkit.entity.furniture.hitbox.BukkitFurnitureHitboxTypes;
@@ -87,6 +88,7 @@ public final class BukkitCraftEngine extends CraftEngine {
     private AntiGriefLib antiGrief;
     private JavaPlugin javaPlugin;
     private ServerEventListener serverEventListener;
+    private final BukkitFurnitureInteractionManager furnitureInteractionManager;
 
     BukkitCraftEngine(JavaPlugin plugin) {
         this(new JavaPluginLogger(plugin.getLogger()), plugin.getDataFolder().toPath().toAbsolutePath(),
@@ -100,6 +102,7 @@ public final class BukkitCraftEngine extends CraftEngine {
         super.sharedClassPathAppender = sharedClassPathAppender;
         super.privateClassPathAppender = privateClassPathAppender;
         super.logger = logger;
+        this.furnitureInteractionManager = new BukkitFurnitureInteractionManager(logger);
         super.platform = new BukkitPlatform(this);
         super.scheduler = new BukkitSchedulerAdapter(this);
         Class<?> compatibilityClass = ReflectionUtils.getClazz(COMPATIBILITY_CLASS);
@@ -114,6 +117,13 @@ public final class BukkitCraftEngine extends CraftEngine {
 
     public static BukkitCraftEngine instance() {
         return instance;
+    }
+
+    /**
+     * 返回家具右键命中扩展管理器。
+     */
+    public BukkitFurnitureInteractionManager furnitureInteractionManager() {
+        return this.furnitureInteractionManager;
     }
 
     @Override
@@ -294,15 +304,14 @@ public final class BukkitCraftEngine extends CraftEngine {
         }
         super.onPluginEnable();
         Bukkit.getMessenger().registerOutgoingPluginChannel(this.javaPlugin(), "BungeeCord");
-        if (VersionHelper.hasPaperPatch) {
-            this.serverEventListener = new ServerEventListener(this);
-            Bukkit.getPluginManager().registerEvents(this.serverEventListener, javaPlugin());
-        }
+        this.serverEventListener = new ServerEventListener(this);
+        Bukkit.getPluginManager().registerEvents(this.serverEventListener, javaPlugin());
     }
 
     @Override
     public void onPluginDisable() {
         if (super.isDisabled) return;
+        this.furnitureInteractionManager.clear();
         RuntimePatcher.clearEntityWorldCallbacks(this);
         super.onPluginDisable();
         if (this.tickTask != null) this.tickTask.cancel();

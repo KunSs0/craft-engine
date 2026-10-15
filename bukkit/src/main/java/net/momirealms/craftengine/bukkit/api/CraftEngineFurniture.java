@@ -1,5 +1,8 @@
 package net.momirealms.craftengine.bukkit.api;
 
+import net.momirealms.craftengine.bukkit.api.furniture.FurnitureInteractionRegistration;
+import net.momirealms.craftengine.bukkit.api.furniture.FurnitureInteractionResolver;
+import net.momirealms.craftengine.bukkit.plugin.BukkitCraftEngine;
 import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurniture;
 import net.momirealms.craftengine.bukkit.entity.furniture.BukkitFurnitureManager;
 import net.momirealms.craftengine.bukkit.entity.seat.BukkitSeatManager;
@@ -24,6 +27,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +37,22 @@ import java.util.Map;
 
 public final class CraftEngineFurniture {
     private CraftEngineFurniture() {}
+
+    /**
+     * 注册家具右键命中解析器。高优先级先执行，同优先级按注册顺序执行。
+     * 所有实现返回 PASS 时使用 CE 默认射线；插件禁用时自动注销。
+     *
+     * @param owner 注册方插件。
+     * @param id 全局唯一解析器 ID。
+     * @param priority 优先级。
+     * @param resolver 命中解析器。
+     * @return 可重复关闭的注销句柄。
+     */
+    @NotNull
+    public static FurnitureInteractionRegistration registerInteractionResolver(@NotNull Plugin owner, @NotNull Key id,
+                                                                              int priority, @NotNull FurnitureInteractionResolver resolver) {
+        return BukkitCraftEngine.instance().furnitureInteractionManager().register(owner, id, priority, resolver);
+    }
 
     /**
      * Returns an unmodifiable map of all currently loaded custom furniture.

@@ -41,6 +41,8 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.byte.buddy)
     testImplementation(project(":core"))
+    paperServer(project, JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+    common(project, JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
     testCompileOnly(project(":bukkit:proxy"))
     testRuntimeOnly(libs.junit.platform.launcher)
 }
